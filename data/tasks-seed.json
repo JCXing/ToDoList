@@ -1,0 +1,200 @@
+[
+ {
+  "name": "SLD光源光谱测试",
+  "priority": "P2 中",
+  "category": "工作",
+  "delay_reason": "",
+  "due_date": "2026-10-30",
+  "tags": "#制造部周会",
+  "status": "待办",
+  "done_at": "",
+  "detail": ""
+ },
+ {
+  "name": "10.13面试反馈",
+  "priority": "P2 中",
+  "category": "工作",
+  "delay_reason": "",
+  "due_date": "2026-10-13",
+  "tags": "",
+  "status": "已完成",
+  "done_at": "",
+  "detail": ""
+ },
+ {
+  "name": "光纤器件长度测量&统计（提醒）",
+  "priority": "P2 中",
+  "category": "工作",
+  "done_at": "2026-10-15 17:39",
+  "delay_reason": "",
+  "due_date": "2026-10-16",
+  "tags": "#制造部周会 #市场部周会",
+  "status": "已完成",
+  "detail": ""
+ },
+ {
+  "name": "天田发货探头测试",
+  "priority": "P2 中",
+  "category": "工作",
+  "done_at": "2026-10-14 17:17",
+  "delay_reason": "",
+  "due_date": "2026-10-14",
+  "tags": "#出货测试",
+  "status": "已完成",
+  "detail": ""
+ },
+ {
+  "name": "确定KLab采购&认证沟通会议时间",
+  "priority": "P2 中",
+  "category": "工作",
+  "done_at": "2026-10-14 17:16",
+  "delay_reason": "",
+  "due_date": "2026-10-14",
+  "tags": "",
+  "status": "已完成",
+  "detail": ""
+ },
+ {
+  "name": "WDM探头图纸-->KLab",
+  "priority": "P2 中",
+  "category": "工作",
+  "done_at": "2026-10-14 09:59",
+  "delay_reason": "",
+  "due_date": "2026-10-14",
+  "tags": "",
+  "status": "已完成",
+  "detail": ""
+ },
+ {
+  "name": "WDM复进手续确认",
+  "priority": "P2 中",
+  "category": "工作",
+  "done_at": "2026-10-14 10:11",
+  "delay_reason": "",
+  "due_date": "2026-10-14",
+  "tags": "",
+  "status": "已完成",
+  "detail": ""
+ },
+ {
+  "name": "回复KLabWDM报价",
+  "priority": "P2 中",
+  "category": "工作",
+  "done_at": "2026-10-14 18:17",
+  "delay_reason": "",
+  "due_date": "2026-10-14",
+  "tags": "#需求对接",
+  "status": "已完成",
+  "detail": ""
+ },
+ {
+  "name": "回复KLab CE/UI认证合作方式",
+  "priority": "P2 中",
+  "category": "工作",
+  "delay_reason": "",
+  "due_date": "2026-10-23",
+  "tags": "#需求对接",
+  "status": "待办",
+  "detail": "2026-10-15\n- DQ做WDM半成品认证，KLab做整机认证，待确认项\n  - DQ需要做哪些认证（生产资质&产品认证）？\n  - KLab做整机认证时是否还需要DQ提供技术资料？\n\n",
+  "done_at": ""
+ },
+ {
+  "name": "摆动头扩束镜+校准模块光斑偏心问题分析",
+  "priority": "P2 中",
+  "category": "工作",
+  "done_at": "",
+  "delay_reason": "20261016 未收到扩束镜\n20261019 收到两个返厂扩束镜，需要一个探头测试\n20261020 有扩束镜，没探头",
+  "due_date": "2026-10-20",
+  "tags": "#产品改进",
+  "status": "已延期",
+  "detail": ""
+ },
+ {
+  "name": "出货控制单元测试",
+  "priority": "P2 中",
+  "category": "工作",
+  "done_at": "2026-10-15 17:31",
+  "delay_reason": "",
+  "due_date": "2026-10-15",
+  "tags": "#出货测试",
+  "status": "已完成",
+  "detail": ""
+ },
+ {
+  "name": "标准校准模块镜片安装方向&标准方案需求-->市场&生产",
+  "priority": "P2 中",
+  "category": "工作",
+  "done_at": "2026-10-16 08:57",
+  "delay_reason": "",
+  "due_date": "2026-10-16",
+  "tags": "#产品改进",
+  "status": "已完成",
+  "detail": ""
+ },
+ {
+  "name": "探头出货测试（3台）",
+  "priority": "P2 中",
+  "category": "工作",
+  "done_at": "2026-10-16 14:00",
+  "delay_reason": "",
+  "due_date": "2026-10-16",
+  "tags": "#出货测试",
+  "status": "已完成",
+  "detail": ""
+ },
+ {
+  "name": "功率通道采集测试（PD板电气确认OK后）",
+  "priority": "P2 中",
+  "category": "其他",
+  "delay_reason": "",
+  "due_date": "2026-10-23",
+  "tags": "#产品改进",
+  "status": "待办",
+  "done_at": "",
+  "detail": ""
+ },
+ {
+  "name": "售后两个扩束镜检查&重调",
+  "priority": "P2 中",
+  "category": "工作",
+  "done_at": "2026-10-20 17:20",
+  "delay_reason": "",
+  "due_date": "2026-10-30",
+  "tags": "#出货测试",
+  "status": "已完成",
+  "detail": ""
+ },
+ {
+  "name": "KLab直头+OCT交期确认",
+  "priority": "P2 中",
+  "category": "工作",
+  "delay_reason": "",
+  "due_date": "2026-10-20",
+  "tags": "#需求对接",
+  "status": "待办",
+  "detail": "- 嘉强直头交期一个月\n- WDM11月初可以交付\n- KLab是否使用嘉强焊接头？",
+  "done_at": ""
+ },
+ {
+  "name": "改造功率通道探头适配MOPA激光器",
+  "priority": "P2 中",
+  "category": "工作",
+  "done_at": "2026-10-20 10:42",
+  "delay_reason": "",
+  "due_date": "2026-10-20",
+  "tags": "#研发实验",
+  "status": "已完成",
+  "detail": "- 工作距离355+87+233+204"
+ },
+ {
+  "name": "填写1019面试反馈",
+  "priority": "P2 中",
+  "category": "工作",
+  "done_at": "2026-10-20 11:21",
+  "delay_reason": "",
+  "due_date": "2026-10-20",
+  "tags": "",
+  "status": "已完成",
+  "detail": ""
+ }
+]
