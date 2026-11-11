@@ -263,10 +263,14 @@
             })
             .then(function (list) {
               var rows = list.map(function (t) {
-                return Object.assign({}, DEFAULT_COLUMN, t, {
+                var row = Object.assign({}, DEFAULT_COLUMN, t, {
                   owner_name: (session.user && session.user.name) || null,
                   images: [],
                 });
+                // Supabase/Postgres：显式插 NULL 不会走列默认值，会触发非空约束（23502）
+                delete row.created_at;
+                delete row.updated_at;
+                return row;
               });
               return run(function () {
                 return db.from('tasks').insert(rows);
