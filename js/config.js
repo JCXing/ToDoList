@@ -8,8 +8,8 @@
  *    每个登录用户只能读写自己 owner_id 的行。
  */
 export const publicConfig = {
-  supabaseUrl: 'https://把你的项目地址填在这里.supabase.co',
-  supabaseAnonKey: '把你的 anon public key 粘贴到这里',
+  supabaseUrl: 'https://jjdlxevrfpdmoeujvyiu.supabase.co/rest/v1/',
+  supabaseAnonKey: 'sb_publishable_NbIrB7bDrTQN4CEbq_dLSQ_cuh2DXjB',
 
   // 仅作 localStorage 键名后缀使用（与原版区分开，两边互不干扰）
   publishableKey: 'supabase',
