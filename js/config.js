@@ -8,7 +8,7 @@
  *    每个登录用户只能读写自己 owner_id 的行。
  */
 export const publicConfig = {
-  supabaseUrl: 'https://jjdlxevrfpdmoeujvyiu.supabase.co/rest/v1/',
+  supabaseUrl: 'https://jjdlxevrfpdmoeujvyiu.supabase.co',
   supabaseAnonKey: 'sb_publishable_NbIrB7bDrTQN4CEbq_dLSQ_cuh2DXjB',
 
   // 仅作 localStorage 键名后缀使用（与原版区分开，两边互不干扰）
