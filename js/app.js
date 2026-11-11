@@ -2693,7 +2693,12 @@ async function boot() {
   window.addEventListener('zhiqi:auth-expired', () => {
     if (authRecovering) return;
     authRecovering = true;
-    keep.recover().then((ok) => {
+    keep.recover().then(async (ok) => {
+      if (!ok && cloud.autoLoginEnabled) {
+        // 备份续不上了：隐式登录模式下直接静默重登，用户无感
+        const res = await cloud.auth.autoLogin();
+        if (res.data) ok = true;
+      }
       authRecovering = false;
       if (ok) {
         keep.startKeepAlive(handleSessionExpired);
@@ -2759,7 +2764,21 @@ async function boot() {
       if (ok) ({ data: session } = await cloud.auth.getSession());
     }
     if (session) enterApp(session);
-    else {
+    else if (cloud.autoLoginEnabled) {
+      // 隐式登录模式：打开即进，用户全程不感知
+      const res = await cloud.auth.autoLogin();
+      if (res.data) {
+        keep.setTrust(true);
+        enterApp(res.data);
+      } else {
+        console.error('[zhiqi] 自动登录失败', res.error?.message);
+        showLogin();
+        showLoginError(
+          '自动登录没成功：请确认 Supabase → Authentication → Users 里已创建 config.js ' +
+            'autoLogin 写的那组邮箱和密码（后台建账号时不要勾「发送确认邮件」）。',
+        );
+      }
+    } else {
       // 记住过账号却拿不出任何凭据：多半是被浏览器清掉了，登录页要说明一句
       if (keep.readIdentity() && !keep.readSdkSession() && !keep.readBackup()) keep.noteFailure({ stage: 'boot' });
       showLogin();
@@ -2770,7 +2789,17 @@ async function boot() {
   }
 
   cloud.auth.onAuthStateChange?.((event) => {
-    if (event === 'SIGNED_OUT') showLogin();
+    if (event === 'SIGNED_OUT') {
+      // 隐式登录模式下不存在「登出」，静默重进；普通模式回登录页
+      if (cloud.autoLoginEnabled) {
+        cloud.auth.autoLogin().then((res) => {
+          if (res.data) enterApp(res.data);
+          else showLogin();
+        });
+      } else {
+        showLogin();
+      }
+    }
   });
 }
 

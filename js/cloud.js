@@ -52,20 +52,53 @@ if (!(await ensureSdk())) {
   throw new Error('Supabase SDK 未能加载');
 }
 
-if (!/^https:\/\/[\w-]+\.supabase\.co$/.test(publicConfig.supabaseUrl)) {
+/**
+ * 容错解析项目地址：从 Supabase 面板不同位置复制会带出各种后缀，都自动修好。
+ *   https://xxx.supabase.co/rest/v1/    ← Settings → API 页最上面那个 REST URL（最容易复制错）
+ *   https://xxx.supabase.co/auth/v1
+ *   xxx.supabase.co                    ← 漏了协议
+ */
+function normalizeSupabaseUrl(raw) {
+  let url = String(raw || '').trim();
+  if (!url) return '';
+  if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+  url = url.replace(/\/(rest|auth|storage|realtime|functions)\/v\d+\/?.*$/i, '');
+  url = url.replace(/\/+$/, '');
+  return url;
+}
+
+const SUPABASE_URL = normalizeSupabaseUrl(publicConfig.supabaseUrl);
+const SUPABASE_KEY = String(publicConfig.supabaseAnonKey || '').trim();
+
+if (SUPABASE_URL !== String(publicConfig.supabaseUrl || '').trim()) {
+  console.warn('[zhiqi] config.js 的 supabaseUrl 带了多余路径，已自动修正为：' + SUPABASE_URL);
+}
+
+if (!/^https:\/\/[\w-]+\.supabase\.co$/i.test(SUPABASE_URL)) {
   console.error('[zhiqi] config.js 里的 supabaseUrl 还没有填写，请先完成部署配置');
   showFatal(
     '还没有填写 Supabase 项目的地址和密钥。',
-    '打开 js/config.js，把 supabaseUrl 和 supabaseAnonKey 换成你自己项目的值（Project Settings → API）。\n当前值：' +
+    '打开 js/config.js，把 supabaseUrl 和 supabaseAnonKey 换成你自己项目的值。\n' +
+      'supabaseUrl 只要到 .supabase.co 为止，不要带 /rest/v1。\n当前值：' +
       (publicConfig.supabaseUrl || '(空)'),
   );
   throw new Error('Supabase 配置未填写');
 }
 
-/** 项目 ref：https://<ref>.supabase.co 中的 <ref> */
-const REF = publicConfig.supabaseUrl.replace(/^https:\/\//, '').replace(/\.supabase\.co$/, '');
+if (!SUPABASE_KEY) {
+  console.error('[zhiqi] config.js 里的 supabaseAnonKey 为空');
+  showFatal(
+    '还没有填写 Supabase 的 anon / publishable 密钥。',
+    '打开 js/config.js，把 supabaseAnonKey 换成 Project Settings → API Keys 里的 anon public\n' +
+      '（新版叫 publishable key，以 sb_publishable_ 开头）。',
+  );
+  throw new Error('Supabase 密钥未填写');
+}
 
-const sb = window.supabase.createClient(publicConfig.supabaseUrl, publicConfig.supabaseAnonKey, {
+/** 项目 ref：https://<ref>.supabase.co 中的 <ref> */
+const REF = SUPABASE_URL.replace(/^https:\/\//i, '').replace(/\.supabase\.co$/i, '');
+
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: {
     autoRefreshToken: true, // 访问令牌快过期时自动续
     persistSession: true, // 会话写入 localStorage，刷新不丢
@@ -180,17 +213,44 @@ const auth = {
   async verifyOtp(payload) {
     try {
       const link = parseOtpLink(payload?.token);
-      const { data, error } = link
-        ? // 用户粘的是登录链接：用链接里的 token_hash 换会话
-          await sb.auth.verifyOtp({ token_hash: link.token_hash, type: link.type })
-        : await sb.auth.verifyOtp({
-            email: payload?.email,
-            token: String(payload?.token || '').replace(/\s+/g, ''),
-            type: 'email',
-          });
+
+      // 粘贴的是邮件里的链接：直接用链接里的 token_hash + type 换会话
+      if (link) {
+        const { data, error } = await sb.auth.verifyOtp({ token_hash: link.token_hash, type: link.type });
+        if (error) return { data: null, error: wrapError(error) };
+        if (data?.session) mirrorSession(data.session);
+        return { data, error: null };
+      }
+
+      // 6 位验证码：同一个码可能是「登录码(email)」也可能是「注册确认码(signup)」，
+      // 取决于 Supabase 后台有没有开 Confirm sign up、模板改的是哪一封，两种都试一次
+      const token = String(payload?.token || '').replace(/\s+/g, '');
+      let lastError = null;
+      for (const type of ['email', 'signup']) {
+        const { data, error } = await sb.auth.verifyOtp({ email: payload?.email, token, type });
+        if (!error) {
+          if (data?.session) mirrorSession(data.session);
+          return { data, error: null };
+        }
+        lastError = error;
+      }
+      return { data: null, error: wrapError(lastError) };
+    } catch (e) {
+      return { data: null, error: wrapError(e) };
+    }
+  },
+
+  /** 隐式自动登录：config.autoLogin 配了账号密码时，打开页面直接进，不经过验证码 */
+  async autoLogin() {
+    const cfg = publicConfig.autoLogin;
+    if (!cfg?.email || !cfg?.password) {
+      return { data: null, error: { message: 'config.js 里没有配置 autoLogin' } };
+    }
+    try {
+      const { data, error } = await sb.auth.signInWithPassword({ email: cfg.email, password: cfg.password });
       if (error) return { data: null, error: wrapError(error) };
       if (data?.session) mirrorSession(data.session);
-      return { data, error: null };
+      return { data: data?.session ?? null, error: null };
     } catch (e) {
       return { data: null, error: wrapError(e) };
     }
@@ -276,7 +336,10 @@ const llm = {
 
 /* --------------------------- 导出 --------------------------- */
 
-export const cloud = { auth, database, storage, llm };
+/** 是否启用了隐式登录（config.autoLogin 填了账号密码） */
+export const autoLoginEnabled = !!(publicConfig.autoLogin?.email && publicConfig.autoLogin?.password);
+
+export const cloud = { auth, database, storage, llm, autoLoginEnabled };
 
 // 任务适配层（js/tasks-adapter.js，经典脚本）登录后从这里取客户端
 window.__zhiqiCloud__ = cloud;
