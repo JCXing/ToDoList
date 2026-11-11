@@ -124,12 +124,14 @@ export const publicConfig = {
    index.html
    tasks.html
    js/
-   assets/
+   assets/          ← 注意：这里还有 assets/vendor/supabase.js，是整个 SDK
    data/
    schema.sql
    DEPLOY.md
    ```
    ⚠️ 拖的是文件夹**里面的东西**，不要把 `supabase-app` 这一层也拖进去
+   ⚠️ 上传完成后，务必在浏览器打开 `你的网址/assets/vendor/supabase.js` 确认：
+   能显示一大段 JS 代码才算传对；显示 404 说明 `assets/vendor` 没传上去，单独补传这个文件
 5. 点 **Commit changes**
 6. 仓库页 → **Settings** → 左侧 **Pages**
    - **Source** 选 `Deploy from a branch`
@@ -180,6 +182,7 @@ Pages 大约 1 分钟后自动生效。
 | 现象 | 原因 / 解决 |
 | --- | --- |
 | 页面提示「Supabase 配置未填写」 | `js/config.js` 还是占位内容，按第四步填好 |
+| 打开网页显示「页面组件加载失败 / 未能加载 Supabase SDK」 | 上传时漏了 `assets/vendor/supabase.js`。浏览器直接打开 `你的网址/assets/vendor/supabase.js`，404 就是缺文件，补传到同路径即可（应用已自带 CDN 兜底，但补上更快更稳） |
 | 收不到验证码 | ① 翻垃圾箱；② 免费版每小时限额（等一小时）；③ 接自定义 SMTP |
 | 邮件里只有一个「登录」按钮、没有 6 位数字 | 邮件模板没改，按第三步 3.3 改成 `{{ .Token }}`；或直接把按钮链接整条粘进验证码框 |
 | 新建项目找不到 `anon key`，只有 `sb_publishable_...` | 新版改名叫 publishable key，直接填到 `supabaseAnonKey` 即可 |

@@ -17,14 +17,48 @@
  */
 import { publicConfig } from './config.js';
 
-if (!window.supabase || typeof window.supabase.createClient !== 'function') {
-  document.getElementById('fatal')?.classList.remove('hidden');
+/** 显示致命错误页，并把诊断信息写进去，方便照着实修 */
+function showFatal(message, detail) {
+  const box = document.getElementById('fatal');
+  if (box) {
+    box.classList.remove('hidden');
+    const msg = box.querySelector('[data-fatal-msg]');
+    if (msg && message) msg.textContent = message;
+    const det = box.querySelector('#fatal-detail');
+    if (det) det.textContent = detail || '';
+  }
+}
+
+/** SDK 是否可用（本地文件被 CDN 兜底时也能等到） */
+async function ensureSdk() {
+  const ready = () => !!(window.supabase && typeof window.supabase.createClient === 'function');
+  if (ready()) return true;
+  if (window.__sdkReady) {
+    await Promise.race([window.__sdkReady, new Promise((r) => setTimeout(r, 10000))]);
+  }
+  return ready();
+}
+
+if (!(await ensureSdk())) {
+  showFatal(
+    '未能加载 Supabase SDK（本地文件和两个 CDN 备用地址都失败了），请检查网络后刷新。',
+    [
+      'SDK 来源：' + (window.__sdkSource || 'none'),
+      '线上实际地址：' + location.origin + location.pathname,
+      '本地文件：assets/vendor/supabase.js',
+      '网络状态：' + (navigator.onLine ? '在线' : '离线'),
+    ].join('\n'),
+  );
   throw new Error('Supabase SDK 未能加载');
 }
 
 if (!/^https:\/\/[\w-]+\.supabase\.co$/.test(publicConfig.supabaseUrl)) {
   console.error('[zhiqi] config.js 里的 supabaseUrl 还没有填写，请先完成部署配置');
-  document.getElementById('fatal')?.classList.remove('hidden');
+  showFatal(
+    '还没有填写 Supabase 项目的地址和密钥。',
+    '打开 js/config.js，把 supabaseUrl 和 supabaseAnonKey 换成你自己项目的值（Project Settings → API）。\n当前值：' +
+      (publicConfig.supabaseUrl || '(空)'),
+  );
   throw new Error('Supabase 配置未填写');
 }
 

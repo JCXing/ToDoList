@@ -294,9 +294,24 @@ svg.ico {
 .auth-foot { font-size: 11.5px; color: var(--ink-4); margin: 0; }
 
 .fatal { position: fixed; inset: 0; display: grid; place-items: center; background: var(--bg); z-index: 99; padding: 24px; }
-.fatal-card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 28px; max-width: 380px; text-align: center; box-shadow: var(--shadow-md); }
+.fatal-card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 28px; max-width: 460px; text-align: center; box-shadow: var(--shadow-md); }
 .fatal-card h2 { font-size: 17px; margin: 0 0 8px; }
 .fatal-card p { color: var(--ink-3); font-size: 13px; margin: 0 0 18px; }
+.fatal-card .fatal-hint {
+  text-align: left; font-size: 12px; line-height: 1.75; color: var(--ink-3);
+  background: var(--surface-2); border: 1px solid var(--line);
+  border-radius: 12px; padding: 12px 14px; margin: 0 0 12px;
+}
+.fatal-card .fatal-hint code {
+  font-size: 11px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 5px; padding: 1px 5px; word-break: break-all;
+}
+.fatal-card .fatal-detail {
+  font-size: 11px; line-height: 1.7; color: var(--ink-4); text-align: left;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  margin: 0 0 16px; word-break: break-all; white-space: pre-line;
+}
 
 /* ===========================================================
    主框架
