@@ -1448,20 +1448,159 @@
       clear(cloud);
       var tagCloudList = allTags();
       if (!tagCloudList.length) {
+        cloud.className = 'cloudWrap';
         cloud.appendChild(el('div', 'empty', '还没有标签，新建任务时可以顺手打上标签。'));
       } else {
-        for (var ti = 0; ti < tagCloudList.length; ti++) {
-          var tb = el('button', 'tagCloud');
-          tb.type = 'button';
-          tb.setAttribute('data-action', 'tag');
-          tb.setAttribute('data-tag', tagCloudList[ti].tag);
-          tb.appendChild(el('span', null, '#' + tagCloudList[ti].tag));
-          tb.appendChild(markDb(el('span', 'n', String(tagCloudList[ti].count))));
-          paintTag(tb, tagCloudList[ti].tag, state.filterTag === tagCloudList[ti].tag);
-          cloud.appendChild(tb);
-        }
+        renderTagPie(cloud, tagCloudList);
       }
     }
+  }
+
+  /* ============ 标签任务数量饼图（甜甜圈 + 可点图例） ============
+   * 数据口径：allTags() 统计的是「标签被多少条任务使用」。一条任务可以带多个标签，
+   * 因此按标注次数归一化画饼，并在说明里写清楚，避免百分比看起来对不上任务总数。
+   * 样式随本文件注入，不用改 CSS / HTML，部署时只需覆盖这一个 js 文件。 */
+  var TAG_PIE_CSS = [
+    '.tagPieWrap{display:flex;gap:18px;flex-wrap:wrap;align-items:center;margin-top:10px}',
+    '.tagPieChart{position:relative;flex:0 0 190px;width:190px;height:190px}',
+    '.tagPieChart svg{display:block;width:100%;height:100%;overflow:visible}',
+    '.tagPieChart circle.base{stroke:var(--line)}',
+    '.tagPieChart circle.seg{cursor:pointer;transition:stroke-width .15s,opacity .15s}',
+    '.tagPieChart:hover circle.seg{opacity:.55}',
+    '.tagPieChart circle.seg:hover,.tagPieChart circle.seg.is-hover{opacity:1;stroke-width:32}',
+    '.tagPieCenter{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;text-align:center}',
+    '.tagPieCenter b{font-size:26px;font-weight:800;line-height:1.1;color:var(--text)}',
+    '.tagPieCenter span{font-size:11.5px;color:var(--muted);margin-top:2px}',
+    '.tagPieCenter small{font-size:11px;color:var(--muted);margin-top:6px}',
+    '.tagPieSide{flex:1 1 260px;min-width:0;display:flex;flex-direction:column;gap:9px}',
+    '.tagLegend{display:grid;gap:6px;max-height:230px;overflow:auto;min-width:0}',
+    '.tagLegendItem{display:flex;align-items:center;gap:9px;width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--text);font-size:12.5px;cursor:pointer;text-align:left;transition:border-color .15s,background .15s}',
+    '.tagLegendItem:hover{border-color:var(--primary);background:var(--primary-soft)}',
+    '.tagLegendItem.is-active{border-color:var(--primary);background:var(--primary-soft)}',
+    '.tagLegendItem .sw{width:11px;height:11px;border-radius:3px;flex:0 0 auto}',
+    '.tagLegendItem .nm{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}',
+    '.tagLegendItem .ct,.tagLegendItem .pc{font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}',
+    '.tagLegendItem .pc{min-width:38px;text-align:right}',
+    '.tagPieNote{font-size:11.5px;color:var(--muted);line-height:1.6}',
+    '@media (max-width:640px){.tagPieWrap{gap:12px}.tagPieChart{flex:0 0 160px;width:160px;height:160px;margin:0 auto}.tagPieSide{flex:1 1 100%}}'
+  ].join('\n');
+
+  function ensureTagPieStyle() {
+    if (document.getElementById('tagPieStyle')) return;
+    var st = document.createElement('style');
+    st.id = 'tagPieStyle';
+    st.textContent = TAG_PIE_CSS;
+    document.head.appendChild(st);
+  }
+
+  /* 饼图专用色板：比 PALETTE 色相更分散，且有去重逻辑，
+     避免两个相邻扇区取到近似色（例如两个绿）而分不清。 */
+  var PIE_COLORS = ['#4f46e5', '#0ea5a4', '#e0a100', '#d64545', '#8b5cf6', '#0b8fb0', '#c2418f', '#16a34a', '#d2691e', '#2563eb', '#9333ea', '#0891b2'];
+  function pieColorList(list) {
+    var used = {}, out = [];
+    for (var i = 0; i < list.length; i++) {
+      var idx = hashStr(list[i].tag) % PIE_COLORS.length;
+      var tries = 0;
+      while (used[idx] && tries < PIE_COLORS.length) { idx = (idx + 1) % PIE_COLORS.length; tries++; }
+      used[idx] = 1;
+      out.push(PIE_COLORS[idx]);
+    }
+    return out;
+  }
+
+  function renderTagPie(box, list) {
+    ensureTagPieStyle();
+    box.className = 'tagPieWrap';
+
+    var total = 0, i, noTag = 0;
+    for (i = 0; i < list.length; i++) total += list[i].count;
+    for (i = 0; i < state.rows.length; i++) {
+      if (!parseTags(state.rows[i].tags).length) noTag++;
+    }
+    var colors = pieColorList(list);
+
+    /* 左：甜甜圈。用 stroke-dasharray 画环段，比手写扇形 path 更稳，
+       单标签时也能自然画成整环（不会退化成零面积）。 */
+    var chart = el('div', 'tagPieChart');
+    var svg = document.createElementNS(SVGNS, 'svg');
+    svg.setAttribute('viewBox', '0 0 200 200');
+    svg.setAttribute('role', 'img');
+    svg.setAttribute('aria-label', '每个标签的任务数量占比');
+
+    var R = 66, SW = 26, C = 2 * Math.PI * R;
+    var base = document.createElementNS(SVGNS, 'circle');
+    base.setAttribute('class', 'base');
+    base.setAttribute('cx', '100'); base.setAttribute('cy', '100'); base.setAttribute('r', String(R));
+    base.setAttribute('fill', 'none'); base.setAttribute('stroke-width', String(SW));
+    svg.appendChild(base);
+
+    var offset = 0;
+    for (i = 0; i < list.length; i++) {
+      var it = list[i];
+      var frac = total ? it.count / total : 0;
+      var len = C * frac;
+      var gap = list.length > 1 ? Math.min(4, len * 0.2) : 0;
+      var dash = Math.max(0.5, len - gap);
+      var seg = document.createElementNS(SVGNS, 'circle');
+      seg.setAttribute('class', 'seg');
+      seg.setAttribute('cx', '100'); seg.setAttribute('cy', '100'); seg.setAttribute('r', String(R));
+      seg.setAttribute('fill', 'none');
+      seg.setAttribute('stroke', colors[i]);
+      seg.setAttribute('stroke-width', String(SW));
+      seg.setAttribute('stroke-dasharray', dash + ' ' + (C - dash));
+      seg.setAttribute('stroke-dashoffset', String(-offset));
+      seg.setAttribute('transform', 'rotate(-90 100 100)');
+      seg.setAttribute('data-action', 'tag');
+      seg.setAttribute('data-tag', it.tag);
+      seg.setAttribute('data-pie-tag', it.tag);
+      var tip = document.createElementNS(SVGNS, 'title');
+      tip.textContent = '#' + it.tag + '：' + it.count + ' 条（' + Math.round(frac * 100) + '%）';
+      seg.appendChild(tip);
+      svg.appendChild(seg);
+      offset += len;
+    }
+    chart.appendChild(svg);
+
+    var center = el('div', 'tagPieCenter');
+    center.appendChild(el('b', null, String(list.length)));
+    center.appendChild(el('span', null, '个标签'));
+    center.appendChild(el('small', null, total + ' 次标注'));
+    chart.appendChild(center);
+    box.appendChild(chart);
+
+    /* 右：图例。沿用原有 data-action="tag" 筛选，点扇区和点图例效果一致。 */
+    var side = el('div', 'tagPieSide');
+    var legend = el('div', 'tagLegend');
+    for (i = 0; i < list.length; i++) {
+      (function (tag, count, pct, color) {
+        var btn = el('button', 'tagLegendItem' + (state.filterTag === tag ? ' is-active' : ''));
+        btn.type = 'button';
+        btn.setAttribute('data-action', 'tag');
+        btn.setAttribute('data-tag', tag);
+        var sw = el('span', 'sw');
+        sw.style.background = color;
+        btn.appendChild(sw);
+        btn.appendChild(el('span', 'nm', '#' + tag));
+        btn.appendChild(el('span', 'ct', count + ' 条'));
+        btn.appendChild(el('span', 'pc', pct + '%'));
+        btn.addEventListener('mouseenter', function () {
+          var segs = svg.querySelectorAll('circle.seg');
+          for (var k = 0; k < segs.length; k++) {
+            if (segs[k].getAttribute('data-pie-tag') === tag) segs[k].classList.add('is-hover');
+          }
+        });
+        btn.addEventListener('mouseleave', function () {
+          var segs = svg.querySelectorAll('circle.seg');
+          for (var k = 0; k < segs.length; k++) segs[k].classList.remove('is-hover');
+        });
+        legend.appendChild(btn);
+      })(list[i].tag, list[i].count, total ? Math.round(list[i].count / total * 100) : 0, colors[i]);
+    }
+    side.appendChild(legend);
+    side.appendChild(el('div', 'tagPieNote',
+      '按标注次数统计，一条任务可含多个标签，各项之和可能大于任务总数。' +
+      (noTag ? '另有 ' + noTag + ' 条未打标签。' : '任务都已打标签。')));
+    box.appendChild(side);
   }
 
   /** AI 复盘：统计在任务台算，生成交给主应用（tasks-page 不是模块，拿不到 ai） */
